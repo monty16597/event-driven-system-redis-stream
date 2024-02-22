@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis-server
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  publisher:
+    build:
+      context: ./Publishers
+      dockerfile: Dockerfile
+    container_name: publishers-app
+    environment:
+      REDIS_HOST: 'redis-server'
+      REDIS_STREAM_NAME: "events_stream"
+      REDIS_CONSUMER_GROUP_NAME: "my_group"
+    ports:
+      - "5000:5000"
+    depends_on:
+      - redis
+  consumer1:
+    build:
+      context: ./Consumers
+      dockerfile: Dockerfile
+    container_name: consumer1
+    environment:
+      REDIS_HOST: 'redis-server'
+      REDIS_STREAM_NAME: "events_stream"
+      REDIS_CONSUMER_GROUP_NAME: "my_group"
+      REDIS_CONSUMER_NAME: "consumer1"
+    depends_on:
+      - redis
+      - publisher
+  consumer2:
+    build:
+      context: ./Consumers
+      dockerfile: Dockerfile
+    container_name: consumer2
+    environment:
+      REDIS_HOST: 'redis-server'
+      REDIS_STREAM_NAME: "events_stream"
+      REDIS_CONSUMER_GROUP_NAME: "my_group"
+      REDIS_CONSUMER_NAME: "consumer2"
+    depends_on:
+      - redis
+      - publisher
+
+volumes:
+  redis_data:
